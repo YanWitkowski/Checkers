@@ -12,6 +12,7 @@
 import { storeToRefs } from "pinia";
 import { defineProps, reactive, ref } from "vue";
 import { useMainStore } from "@/store";
+import { useMoveCalculate } from "@/composables/moveCalculate.js"
 
 const store = useMainStore();
 const { table } = storeToRefs(store);
@@ -33,46 +34,6 @@ const current = reactive({
     cy: cy.value, 
     figureType: figureType.value,
 });
-
-function editWay(way) {
-  const { cx, cy, position } = way;
-
-  const options = {
-    topLeft: (x, y) => ({ cx: x - 1, cy: y - 1 }),
-    topRight: (x, y) => ({ cx: x + 1, cy: y - 1 }),
-    bottomLeft: (x, y) => ({ cx: x - 1, cy: y + 1 }),
-    bottomRight: (x, y) => ({ cx: x + 1, cy: y + 1 })
-  };
-
-  return Object.assign({ position }, options[position](cx, cy));
-}
-
-function moveCalculate(ways) {
-  const availableWays= {
-    1: ["topLeft", "topRight"],
-    2: ["bottomLeft", "bottomRight"]
-  };
-
-  const temp = [];
-
-  ways.forEach((way) => {
-    const { cx, cy, position } = way;
-    const tableCell = table.value[cy][cx];
-    const canMove = availableWays[figureType.value].includes(position);
-
-     //ячейка пуста, но неверное направление
-     if (tableCell === 0 && !canMove) return;
-    //ячейка пуста, но верное направление
-    if (tableCell === 0 && canMove) {
-      return temp.push(way);
-    }
-    if (tableCell !== figureType.value) {
-      return temp.push(editWay(way));
-    }
-  });
-
-  return temp;
-}
 
 function onTable(way) {
     const { cx, cy } = way;
@@ -111,7 +72,7 @@ function showWay() {
         },
     ].filter((item) => onTable(item));
 
-    ways = moveCalculate(ways).filter(item => canMove(item));
+    ways = useMoveCalculate({ ways, table, figureType }).filter((item) => canMove(item));
 
     emit("showWay", { ways, current });
 }
